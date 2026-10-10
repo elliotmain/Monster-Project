@@ -1,0 +1,27 @@
+Tutorial Manual
+
+Step 1:
+    Run the following in your cmd: wsl --install
+
+Step 2:
+    Restart your device
+
+Step 3:
+    Upon restarting, run the following in your cmd: wsl.exe --install ubuntu
+
+When "Create a default Unix user account: " appears in your cmd: if your name/username is displayed, simply press "Enter"; otherwise, type your name/username (e.g., kevin) and press "Enter".
+When "New password: " appears: type a password for your WSL machine and press "Enter" (do not forget this password!).
+When "Retype new password: " appears: type the password you entered previously and press "Enter".
+
+Step 4:
+    Warning: If prompted for your password, type it in. Do not worry if the characters do not appear on the screen; this is normal behavior for the sake of your security and privacy!
+
+    Run: sudo apt update -y
+
+Next:
+sudo apt install hping3 python3 python3-pip -y
+
+And finally, to install the requirements:
+pip install rich --break-system-packages
+
+You can now close your terminal and use the tool normally by running STARTER or using shortcuts/aliases!
