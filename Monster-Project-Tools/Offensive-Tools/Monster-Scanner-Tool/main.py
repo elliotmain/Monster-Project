@@ -1,7 +1,8 @@
+# This use NMAP!
 try:
-    import socket
-    import rich
+    from rich.console import Console
+    import subprocess
 except ImportError:
-    print("[!] Error! Run the installer and try again later.")
+    print("Error, run the installer and try again later.")
 
 
