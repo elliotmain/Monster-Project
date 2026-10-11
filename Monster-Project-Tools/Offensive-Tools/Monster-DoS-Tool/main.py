@@ -15,12 +15,8 @@ except ImportError:
  ##########################################
 if os.geteuid() != 0:
     print("[!] This tool requires root privileges to use raw sockets (hping3).")
-    print("[!] Please run with: sudo python3 STARTER.py")
-    print("Press ENTER to continue, else press CONTROL + C.")
-    try:
-        input()
-    except:
-        sys.exit(2)    
+    print("[!] Please run with: sudo python3 STARTER.py or run with administrator.")
+    sys.exit(1)
 
    ######################################
   # Pre-definitions and Configurations #
