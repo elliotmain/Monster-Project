@@ -19,5 +19,6 @@ if '%errorlevel%' NEQ '0' (
 cls
 cd %userprofile%\Monster-Project\Monster-Project-Tools\Offensive-Tools\Monster-DoS-Tool
 cls
+echo [Monster-Project] - Starting...
 python3 STARTER.py
 pause
