@@ -25,3 +25,13 @@ And finally, to install the requirements:
 pip install rich --break-system-packages
 
 You can now close your terminal and use the tool normally by running STARTER or using shortcuts/aliases!
+
+
+ALTERNATIVE METHOD:
+Running it natively—for instance, by utilizing built-in Windows tools—can lead to errors (such as those encountered with DoS tools); however, if you wish to proceed, follow the steps below:
+
+Step 1:
+    Download and install Python 3.
+
+Step 2:
+    Download and install the RICH library and READLINE for Python 3
