@@ -11,6 +11,8 @@ system = platform.system()
 if system == "Windows":
     subprocess.run("wsl -u root python3 main.py")
 elif system in ["Linux", "Darwin"]:
-    import main
+    import os, subprocess, sys
+    main_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "main.py")
+    subprocess.run([sys.executable, main_py], check=True)
 else:
     print("Manually execute main.py and resolve any errors for your system.")

@@ -4,9 +4,9 @@ Step 1:
     Update your repositories;
 
 Step 2:
-    Install the following packages according to your distribution: hping3 python3 python3-pip
+    Install the following packages according to your distribution: hping python3 python3-pip
 
 Step 3:
-    Run the following command to install the Python 3 "rich" library: pip install rich --break-system-packages
+    Run the following command to install the Python 3 "rich" library: pip install rich scapy --break-system-packages
 
 And that's it!

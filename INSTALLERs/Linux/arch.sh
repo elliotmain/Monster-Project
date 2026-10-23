@@ -1,3 +1,6 @@
-sudo pacman -Syu -noconfirm
-sudo pacman -S hping3 python3 python3-pip nmap -noconfirm
-pip install rich --break-system-packages
+#!/bin/bash
+set -e
+sudo pacman -Syu
+sudo pacman -S --needed --noconfirm hping python python-pip nmap
+pip install rich scapy --break-system-packages
+echo "Monster-Project: Installed with SUCCESS!"

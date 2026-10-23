@@ -1,3 +1,5 @@
-sudo apt update -y
-sudo apt install hping3 python3 python3-pip nmap -y
-pip install rich --break-system-packages
+#!/bin/bash
+set -e
+sudo apt install hping python python-pip nmap -y
+pip install rich scapy --break-system-packages
+echo "Monster-Project: Installed with SUCCESS!"
