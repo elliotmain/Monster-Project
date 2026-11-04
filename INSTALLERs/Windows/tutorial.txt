@@ -1,6 +1,7 @@
 Tutorial Manual
 
 Step 1:
+    Download Python in your device
     Run the following in your cmd: wsl --install
 
 Step 2:
