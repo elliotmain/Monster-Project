@@ -3,6 +3,7 @@
 ###########
 # IMPORTS #
 ###########
+from scripts.platform_utils import find_hping3, apply_kernel_tunings
 from rich.console import Console
 import asyncio
 import subprocess
@@ -128,7 +129,7 @@ async def main_attack(host, port):
             for proc in processes:
                 try:
                     proc.terminate()
-                except:
+                except Exception:
                     pass
         thread.join(timeout=1)
         sys.exit(0)
@@ -137,6 +138,7 @@ async def main_attack(host, port):
 # RUNNER #
 ##########
 def run(host, port):
+    apply_kernel_tunings()
     print(f"[DEBUG] UDP Flood attack started for {host}:{port} (hping3)")
     try:
         asyncio.run(main_attack(host, port))

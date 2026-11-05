@@ -1,6 +1,7 @@
 ###########
 # IMPORTS #
 ###########
+from scripts.platform_utils import find_hping3, apply_kernel_tunings
 import asyncio
 import socket
 import random

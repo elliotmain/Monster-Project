@@ -41,7 +41,7 @@ def is_admin():
 
 if not is_admin():
     print("[!] This tool requires Administrator/root privileges to use raw sockets.")
-    print("[!] On Linux/macOS: sudo python3 STARTER.py")
+    print("[!] On Linux/macOS: sudo python STARTER.sh")
     print("[!] On Windows: right-click the terminal and select 'Run as administrator'.")
     sys.exit(1)
 
@@ -100,6 +100,9 @@ def setup_readline():
     """Enable tab completion + persistent history (if readline is available)."""
     if readline is None:
         return
+
+    from scripts.platform_utils import get_history_file
+
     commands = ["clear", "help", "set", "start", "play", "exit", "quit"]
     subcommands = ["host!", "port!", "type!"]
 
@@ -120,7 +123,7 @@ def setup_readline():
     try:
         readline.set_completer(completer)
         readline.parse_and_bind("tab: complete")
-        histfile = os.path.expanduser("~/.monster_dos_history")
+        histfile = get_history_file()
         try:
             readline.read_history_file(histfile)
         except (FileNotFoundError, OSError):

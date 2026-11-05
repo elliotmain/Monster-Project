@@ -3,6 +3,7 @@
 ###########
 # IMPORTS #
 ###########
+from scripts.platform_utils import find_hping3, apply_kernel_tunings
 from rich.console import Console
 import asyncio
 import subprocess
@@ -126,7 +127,7 @@ async def main_attack(host):
             for proc in processes:
                 try:
                     proc.terminate()
-                except:
+                except Exception:
                     pass
         thread.join(timeout=1)
         sys.exit(0)

@@ -3,6 +3,7 @@
 ###########
 # IMPORTS #
 ###########
+from scripts.platform_utils import find_hping3, apply_kernel_tunings
 from rich.console import Console
 import asyncio
 import subprocess
@@ -10,7 +11,6 @@ import sys
 import time
 import os
 import threading
-import shutil
 
 ############
 # PRE-DEFS #
@@ -50,22 +50,6 @@ except Exception as e:
 
 # DNS payload size (typical DNS query size)
 DNS_PAYLOAD_SIZE = 512
-
-###############
-# VERIFICAÇÃO #
-###############
-def find_hping3():
-    hping3_path = shutil.which("hping3")
-    if hping3_path is None:
-        possible_paths = ["/usr/sbin/hping3", "/usr/bin/hping3", "/sbin/hping3"]
-        for path in possible_paths:
-            if os.path.exists(path) and os.access(path, os.X_OK):
-                hping3_path = path
-                break
-    if hping3_path is None:
-        print("[!] hping3 not found. Install it and try again.")
-        sys.exit(1)
-    return hping3_path
 
 ###############
 # ATTACK TASK #
@@ -130,7 +114,7 @@ async def main_attack(host):
             for proc in processes:
                 try:
                     proc.terminate()
-                except:
+                except Exception:
                     pass
         thread.join(timeout=1)
         sys.exit(0)
